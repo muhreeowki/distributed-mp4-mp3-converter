@@ -1,0 +1,30 @@
+# https://kubernetes.io/docs/concepts/workloads/controllers/deployment/
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth
+  namespace: default
+  labels:
+    app: auth
+spec:
+  selector:
+    matchLabels:
+      app: auth
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxSurge: 3
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: auth
+    spec:
+      containers:
+        - name: auth
+          image: muhreeowki/mp3-mp4-auth
+          envFrom:
+            - secretRef:
+                name: auth-secret
+          ports:
+            - containerPort: 80

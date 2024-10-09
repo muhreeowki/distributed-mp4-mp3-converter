@@ -15,6 +15,7 @@ import (
 type AuthClaims struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Admin    bool
 	jwt.RegisteredClaims
 }
 
@@ -26,6 +27,7 @@ func CreateJWT(user *User) (string, error) {
 	claims := &AuthClaims{
 		Email:    user.Email,
 		Password: user.Password,
+		Admin:    true,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Hour * 3)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -49,6 +51,7 @@ func VerifyJWT(tokenString string) (*jwt.Token, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return secret, nil
 	})
+	// Check if there was an error parsing the token
 	if err != nil {
 		return nil, err
 	} else if claims, ok := token.Claims.(*AuthClaims); ok {

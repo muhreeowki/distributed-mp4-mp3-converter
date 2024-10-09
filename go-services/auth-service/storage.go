@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"os"
 
 	_ "github.com/lib/pq"
 )
@@ -25,7 +26,8 @@ type PostgersStore struct {
 
 // NewPostgersStore creates a new PostgerSQL Store instance
 func NewPostgersStore() (*PostgersStore, error) {
-	db, err := sql.Open("postgres", "dbname=postgres user=postgres password=postgres sslmode=disable")
+	conStr := os.Getenv("POSTGRES_URL")
+	db, err := sql.Open("postgres")
 	if err != nil {
 		return nil, err
 	}
