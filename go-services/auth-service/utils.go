@@ -27,7 +27,7 @@ func CreateJWT(user *User) (string, error) {
 		Email:    user.Email,
 		Password: user.Password,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Unix(1516239022, 0)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Hour * 3)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
@@ -46,7 +46,7 @@ func CreateJWT(user *User) (string, error) {
 // VerifyJWT verifies the JWT token and returns the token if it is valid
 func VerifyJWT(tokenString string) (*jwt.Token, error) {
 	secret := []byte(os.Getenv("JWT_SECRET"))
-	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &AuthClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return secret, nil
 	})
 	if err != nil {
@@ -55,7 +55,7 @@ func VerifyJWT(tokenString string) (*jwt.Token, error) {
 		log.Println(claims.Email, claims.IssuedAt.Time)
 		return token, nil
 	} else {
-		return nil, fmt.Errorf("unknown claims type")
+		return nil, fmt.Errorf("unknown claims type: %+v", claims)
 	}
 }
 

@@ -23,10 +23,16 @@ func NewServer(listenAddr string, store Store) *Server {
 // ListenAndServe starts the HTTP server and listens for incoming requests
 func (s *Server) ListenAndServe() error {
 	router := http.NewServeMux()
-	router.HandleFunc("/login", s.handleLogin)
+	router.HandleFunc("GET /health", s.handleHealth)
+	router.HandleFunc("POST /login", s.handleLogin)
+	router.HandleFunc("POST /validate", s.handleValidate)
 
 	log.Printf("Server is listening on %s...", s.listenAddr)
 	return http.ListenAndServe(s.listenAddr, router)
+}
+
+func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
+	WriteJSON(w, http.StatusOK, "OK")
 }
 
 // handleLogin handles the login request and returns a JWT token if the user is valid
@@ -61,4 +67,28 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("User %s logged in with token: %s\n", user.Email, token)
 	WriteJSON(w, http.StatusOK, map[string]string{"token": token})
+}
+
+func (s *Server) handleValidate(w http.ResponseWriter, r *http.Request) {
+	// Get the token from the request
+	token := r.Header.Get("Authorization")
+	if token == "" {
+		WriteJSON(w, http.StatusUnauthorized, "missing token")
+		return
+	}
+
+	// Check if the token is a bearer token
+	if string(token[:7]) != "Bearer " {
+		WriteJSON(w, http.StatusUnauthorized, "invalid authorization header")
+		return
+	}
+	token = token[7:]
+
+	// Verify the token
+	_, err := VerifyJWT(token)
+	if err != nil {
+		WriteJSON(w, http.StatusUnauthorized, err.Error())
+		return
+	}
+	WriteJSON(w, http.StatusOK, "valid token")
 }
