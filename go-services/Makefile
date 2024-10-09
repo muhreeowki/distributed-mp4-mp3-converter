@@ -1,5 +1,5 @@
-build:
-	@go build -o bin/server
+build-auth:
+	@cd auth-service && go build -o ../bin/auth-server
 
-run: build
-	@./bin/server
+run-auth: build-auth
+	@./bin/auth-server
