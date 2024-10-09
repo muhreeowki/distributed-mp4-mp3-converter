@@ -5,14 +5,17 @@ import (
 )
 
 func main() {
+	// Create a new PostgresStore instance
 	store, err := NewPostgersStore()
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
 
+	// Create a new Server instance
 	server := NewServer(":8080", store)
 
+	// Start the server
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}

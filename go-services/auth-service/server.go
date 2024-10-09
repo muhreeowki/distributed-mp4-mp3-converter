@@ -4,17 +4,15 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
-	"time"
-
-	"github.com/golang-jwt/jwt/v5"
 )
 
+// Server represents the HTTP server instance for the auth service
 type Server struct {
 	store      Store
 	listenAddr string
 }
 
+// NewServer creates a new Server instance
 func NewServer(listenAddr string, store Store) *Server {
 	return &Server{
 		store:      store,
@@ -22,6 +20,7 @@ func NewServer(listenAddr string, store Store) *Server {
 	}
 }
 
+// ListenAndServe starts the HTTP server and listens for incoming requests
 func (s *Server) ListenAndServe() error {
 	router := http.NewServeMux()
 	router.HandleFunc("/login", s.handleLogin)
@@ -30,6 +29,7 @@ func (s *Server) ListenAndServe() error {
 	return http.ListenAndServe(s.listenAddr, router)
 }
 
+// handleLogin handles the login request and returns a JWT token if the user is valid
 func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	// Get the user from the request body
 	user := &User{}
@@ -61,30 +61,4 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 
 	log.Printf("User %s logged in with token: %s\n", user.Email, token)
 	WriteJSON(w, http.StatusOK, map[string]string{"token": token})
-}
-
-func CreateJWT(user *User) (string, error) {
-	secret := []byte(os.Getenv("JWT_SECRET"))
-
-	// Create the Claims
-	claims := &jwt.RegisteredClaims{
-		ExpiresAt: jwt.NewNumericDate(time.Unix(1516239022, 0)),
-		Issuer:    "test",
-	}
-
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	tokenString, err := token.SignedString(secret)
-	if err != nil {
-		return "", err
-	}
-
-	return tokenString, nil
-}
-
-func WriteJSON(w http.ResponseWriter, code int, v interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	if err := json.NewEncoder(w).Encode(v); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-	}
 }
