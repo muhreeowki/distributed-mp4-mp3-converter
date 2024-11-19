@@ -48,8 +48,12 @@ func (s *PostgersStore) Init() error {
 	if err != nil {
 		return err
 	}
+	// Create a default user if it does not exist for testing
+	if _, err := s.GetUser(""); err == nil {
+		return s.CreateUser(&User{Email: "bob@bob.bob", Password: "password"})
+	}
 
-	return s.CreateUser(&User{Email: "bob@bob.bob", Password: "password"})
+	return nil
 }
 
 // CreateUserTable creates the user table in the database

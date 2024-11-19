@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 )
 
 type GatewayHandlerFunc func(w http.ResponseWriter, r *http.Request) error
@@ -25,6 +26,7 @@ func (s *GatewayServer) ListenAndServe() error {
 	router := http.NewServeMux()
 	router.HandleFunc("GET /healthz", s.makeHandlerFunc(s.handleHealth))
 	router.HandleFunc("POST /login", s.makeHandlerFunc(s.handleLogin))
+	router.HandleFunc("POST /upload", s.makeHandlerFunc(s.handleVideoUpload))
 
 	log.Printf("Server is listening on %s...", s.listenAddr)
 	return http.ListenAndServe(s.listenAddr, router)
@@ -39,10 +41,15 @@ func (s *GatewayServer) handleLogin(w http.ResponseWriter, r *http.Request) erro
 		return fmt.Errorf("request body is empty")
 	}
 	// Call the auth service to login the user
-	resp, err := http.Post("http://localhost:8080/login", "json", r.Body)
+	resp, err := http.Post(os.Getenv("AUTH_SVC_URL")+"/login", "json", r.Body)
+	if err != nil {
+		return err
+	}
+
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("failed to login: auth service returned [%s] status code.", resp.Status)
 	}
+
 	log.Printf("login successful")
 	// Return the response from the auth service
 	data := make(map[string]string)
@@ -50,6 +57,43 @@ func (s *GatewayServer) handleLogin(w http.ResponseWriter, r *http.Request) erro
 		return err
 	}
 	return WriteJSON(w, resp.StatusCode, data)
+}
+
+func (s *GatewayServer) handleVideoUpload(w http.ResponseWriter, r *http.Request) error {
+	// Validate the token received in the request header
+	if r.Header["Authorization"] == nil {
+		return fmt.Errorf("authorization header is missing")
+	}
+	req, err := http.NewRequest("GET", os.Getenv("AUTH_SVC_URL")+"/validate", nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Authorization", r.Header.Get("Authorization"))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("invalid token")
+	}
+
+	log.Println("token validated")
+
+	// Parse Video file from request
+	r.ParseMultipartForm(10 << 20)
+
+	// retrieve file from form data
+	file, handler, err := r.FormFile("mp4File")
+	if err != nil {
+		return fmt.Errorf("failed to retrive mp4 from request: ", err)
+	}
+	defer file.Close()
+
+	fmt.Println("File Name:", handler.Filename)
+	fmt.Println("File Size:", handler.Size)
+
+	// TODO: Write the file to the store
+
+	return WriteJSON(w, http.StatusOK, "upload successful")
 }
 
 func (s *GatewayServer) makeHandlerFunc(f GatewayHandlerFunc) http.HandlerFunc {

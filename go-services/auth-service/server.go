@@ -26,7 +26,7 @@ func (s *AuthServer) ListenAndServe() error {
 	router := http.NewServeMux()
 	router.HandleFunc("GET /healthz", s.handleHealth)
 	router.HandleFunc("POST /login", s.handleLogin)
-	router.HandleFunc("POST /validate", s.handleValidate)
+	router.HandleFunc("GET /validate", s.handleValidate)
 
 	log.Printf("Server is listening on %s...", s.listenAddr)
 	return http.ListenAndServe(s.listenAddr, router)
