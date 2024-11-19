@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 )
@@ -41,6 +42,12 @@ func (s *AuthServer) handleLogin(w http.ResponseWriter, r *http.Request) {
 	user := &User{}
 	if err := json.NewDecoder(r.Body).Decode(user); err != nil {
 		WriteJSON(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	// Check if the user has provided the email and password
+	if user.Email == "" || user.Password == "" {
+		WriteJSON(w, http.StatusInternalServerError, fmt.Errorf("missing credentials"))
 		return
 	}
 

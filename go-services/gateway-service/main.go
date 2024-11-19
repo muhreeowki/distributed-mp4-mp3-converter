@@ -10,7 +10,7 @@ import "log"
 func main() {
 	store := NewMongoStore()
 
-	s := NewGatewayServer(":8080", store)
+	s := NewGatewayServer(":3000", store)
 
 	if err := s.ListenAndServe(); err != nil {
 		log.Fatal(err)

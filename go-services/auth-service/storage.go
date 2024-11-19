@@ -49,8 +49,7 @@ func (s *PostgersStore) Init() error {
 		return err
 	}
 
-	err = s.CreateUser(&User{Email: "bob@bob.bob", Password: "password"})
-	return err
+	return s.CreateUser(&User{Email: "bob@bob.bob", Password: "password"})
 }
 
 // CreateUserTable creates the user table in the database
