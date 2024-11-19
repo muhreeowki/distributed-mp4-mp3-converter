@@ -6,24 +6,24 @@ import (
 	"net/http"
 )
 
-// Server represents the HTTP server instance for the auth service
-type Server struct {
+// AuthServer represents the HTTP server instance for the auth service
+type AuthServer struct {
 	store      Store
 	listenAddr string
 }
 
-// NewServer creates a new Server instance
-func NewServer(listenAddr string, store Store) *Server {
-	return &Server{
+// NewAuthServer creates a new Server instance
+func NewAuthServer(listenAddr string, store Store) *AuthServer {
+	return &AuthServer{
 		store:      store,
 		listenAddr: listenAddr,
 	}
 }
 
 // ListenAndServe starts the HTTP server and listens for incoming requests
-func (s *Server) ListenAndServe() error {
+func (s *AuthServer) ListenAndServe() error {
 	router := http.NewServeMux()
-	router.HandleFunc("GET /health", s.handleHealth)
+	router.HandleFunc("GET /healthz", s.handleHealth)
 	router.HandleFunc("POST /login", s.handleLogin)
 	router.HandleFunc("POST /validate", s.handleValidate)
 
@@ -31,12 +31,12 @@ func (s *Server) ListenAndServe() error {
 	return http.ListenAndServe(s.listenAddr, router)
 }
 
-func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
+func (s *AuthServer) handleHealth(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, "OK")
 }
 
 // handleLogin handles the login request and returns a JWT token if the user is valid
-func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
+func (s *AuthServer) handleLogin(w http.ResponseWriter, r *http.Request) {
 	// Get the user from the request body
 	user := &User{}
 	if err := json.NewDecoder(r.Body).Decode(user); err != nil {
@@ -69,7 +69,7 @@ func (s *Server) handleLogin(w http.ResponseWriter, r *http.Request) {
 	WriteJSON(w, http.StatusOK, map[string]string{"token": token})
 }
 
-func (s *Server) handleValidate(w http.ResponseWriter, r *http.Request) {
+func (s *AuthServer) handleValidate(w http.ResponseWriter, r *http.Request) {
 	// Get the token from the request
 	token := r.Header.Get("Authorization")
 	if token == "" {

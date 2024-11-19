@@ -27,7 +27,7 @@ type PostgersStore struct {
 // NewPostgersStore creates a new PostgerSQL Store instance
 func NewPostgersStore() (*PostgersStore, error) {
 	conStr := os.Getenv("POSTGRES_URL")
-	db, err := sql.Open("postgres")
+	db, err := sql.Open("postgres", conStr)
 	if err != nil {
 		return nil, err
 	}

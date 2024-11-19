@@ -13,7 +13,7 @@ func main() {
 	}
 
 	// Create a new Server instance
-	server := NewServer(":8080", store)
+	server := NewAuthServer(":8080", store)
 
 	// Start the server
 	if err := server.ListenAndServe(); err != nil {
