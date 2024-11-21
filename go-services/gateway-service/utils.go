@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -14,4 +15,10 @@ func WriteJSON(w http.ResponseWriter, code int, v interface{}) error {
 		return fmt.Errorf("error encoding JSON response: %w", err)
 	}
 	return nil
+}
+
+func failOnError(err error, msg string) {
+	if err != nil {
+		log.Panicf("%s: %s", msg, err)
+	}
 }

@@ -11,14 +11,16 @@ import (
 type GatewayHandlerFunc func(w http.ResponseWriter, r *http.Request) error
 
 type GatewayServer struct {
-	store      Store
-	listenAddr string
+	store        Store
+	messageQueue MessageQueue
+	listenAddr   string
 }
 
-func NewGatewayServer(listenAddr string, store Store) *GatewayServer {
+func NewGatewayServer(listenAddr string, store Store, messageQueue MessageQueue) *GatewayServer {
 	return &GatewayServer{
-		store:      store,
-		listenAddr: listenAddr,
+		store:        store,
+		messageQueue: messageQueue,
+		listenAddr:   listenAddr,
 	}
 }
 
@@ -64,18 +66,9 @@ func (s *GatewayServer) handleVideoUpload(w http.ResponseWriter, r *http.Request
 	if r.Header["Authorization"] == nil {
 		return fmt.Errorf("authorization header is missing")
 	}
-	req, err := http.NewRequest("GET", os.Getenv("AUTH_SVC_URL")+"/validate", nil)
-	if err != nil {
+	if err := validateToken(r.Header.Get("Authorization")); err != nil {
 		return err
 	}
-
-	req.Header.Add("Authorization", r.Header.Get("Authorization"))
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil || resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("invalid token")
-	}
-
 	log.Println("token validated")
 
 	// Parse Video file from request
@@ -91,10 +84,18 @@ func (s *GatewayServer) handleVideoUpload(w http.ResponseWriter, r *http.Request
 	fmt.Println("File Name:", handler.Filename)
 	fmt.Println("File Size:", handler.Size)
 
-	// TODO: Write the file to the store
+	// TODO: Upload the file to the store
+
+	// 1. Store the file in the mongo store using gridfs
+	//    vid_id := s.store.SaveFile(file)
+	// 2. Send a message to the message queue to process the video
+	//    s.messageQueue.SendMessage(vid_id)
+	// 3. Return a response
 
 	return WriteJSON(w, http.StatusOK, "upload successful")
 }
+
+// TODO: Add download handler
 
 func (s *GatewayServer) makeHandlerFunc(f GatewayHandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -109,4 +110,24 @@ func (s *GatewayServer) makeHandlerFunc(f GatewayHandlerFunc) http.HandlerFunc {
 type User struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
+}
+
+func validateToken(token string) error {
+	if len(token) == 0 {
+		return fmt.Errorf("missing token")
+	}
+
+	// Call the auth service to validate the token
+	req, err := http.NewRequest("GET", os.Getenv("AUTH_SVC_URL")+"/validate", nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Authorization", token)
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil || resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("invalid token")
+	}
+	return nil
 }
