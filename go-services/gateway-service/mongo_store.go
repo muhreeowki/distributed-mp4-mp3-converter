@@ -14,6 +14,7 @@ import (
 
 type Store interface {
 	SaveFile(filename string, file io.Reader) (string, error)
+	DeleteFile(objectId string) error
 }
 
 type MongoStore struct {
@@ -60,4 +61,8 @@ func (s *MongoStore) SaveFile(filename string, file io.Reader) (string, error) {
 		return "", err
 	}
 	return objectId.String(), nil
+}
+
+func (s *MongoStore) DeleteFile(objectId string) error {
+	return s.gridfs.Delete(objectId)
 }

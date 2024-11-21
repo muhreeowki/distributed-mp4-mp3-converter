@@ -76,6 +76,7 @@ func (s *GatewayServer) handleVideoUpload(w http.ResponseWriter, r *http.Request
 		return err
 	}
 	log.Println("token validated")
+	// TODO: Get the users claims from the token. (ie username, email etc.)
 
 	// Parse Video file from request
 	if err := r.ParseMultipartForm(20000000); err != nil {
@@ -92,17 +93,17 @@ func (s *GatewayServer) handleVideoUpload(w http.ResponseWriter, r *http.Request
 	fmt.Println("File Name:", handler.Filename)
 	fmt.Println("File Size:", handler.Size)
 
-	// TODO: Upload the file to the store
-
 	// 1. Store the file in the mongo store using gridfs
 	videoId, err := s.store.SaveFile(handler.Filename, file)
 	if err != nil {
 		return fmt.Errorf("failed to save video file: %v", err)
 	}
-	log.Printf("Video saved with ID: %s", videoId)
+	log.Printf("Video stored in mongoDB gridfs with ID: %s", videoId)
 	// 2. Send a message to the message queue to process the video
-	//    s.messageQueue.SendMessage(vid_id)
-	// 3. Return a response
+	if err := s.messageQueue.SendVideoUploadedMessage(videoId, handler.Size, "bob"); err != nil {
+		s.store.DeleteFile(videoId)
+		return fmt.Errorf("failed to put video file: %v", err)
+	} // TODO: Get users username from the JWT Token
 
 	return WriteJSON(w, http.StatusOK, "upload successful")
 }

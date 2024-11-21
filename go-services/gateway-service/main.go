@@ -18,6 +18,8 @@ func main() {
 
 	queue, err := NewRabbitMQ("amqp://guest:guest@localhost:5672/")
 	failOnError(err, "")
+	defer queue.conn.Close()
+	defer queue.channel.Close()
 
 	server := NewGatewayServer(":3000", store, queue)
 	err = server.ListenAndServe()
