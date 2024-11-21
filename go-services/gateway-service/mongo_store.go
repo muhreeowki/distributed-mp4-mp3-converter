@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"io"
 	"log"
 
 	"go.mongodb.org/mongo-driver/bson"
@@ -11,7 +12,9 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-type Store interface{}
+type Store interface {
+	SaveFile(filename string, file io.Reader) (string, error)
+}
 
 type MongoStore struct {
 	gridfs *gridfs.Bucket
@@ -28,11 +31,6 @@ func NewMongoStore(conStr string) (*MongoStore, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := client.Disconnect(context.Background()); err != nil {
-			panic(err)
-		}
-	}()
 
 	// Get the database
 	db := client.Database("admin")
@@ -54,4 +52,12 @@ func NewMongoStore(conStr string) (*MongoStore, error) {
 		gridfs: gfs,
 		client: client,
 	}, nil
+}
+
+func (s *MongoStore) SaveFile(filename string, file io.Reader) (string, error) {
+	objectId, err := s.gridfs.UploadFromStream(filename, file)
+	if err != nil {
+		return "", err
+	}
+	return objectId.String(), nil
 }
