@@ -34,7 +34,7 @@ func NewMongoStore(conStr string) (*MongoStore, error) {
 	}
 
 	// Get the database
-	db := client.Database("admin")
+	db := client.Database("videos")
 
 	// Check the connection
 	var result bson.M

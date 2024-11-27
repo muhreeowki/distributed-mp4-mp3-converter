@@ -9,3 +9,9 @@ build-gateway:
 
 run-gateway: build-gateway
 	@./bin/gateway
+
+build-converter:
+	@cd converter-service && go build -o ../bin/converter
+
+run-converter: build-converter
+	@./bin/converter
